@@ -12,7 +12,27 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    
     - name: Build project
       run: make
-    - name: Run tests (if available)
-      run: make test || echo "No test target found, skipping tests"
+      
+    - name: List built artifacts
+      run: ls -la
+      
+    - name: Create version info
+      run: |
+        echo "Build date: $(date)" > build-info.txt
+        echo "Commit: ${{ github.sha }}" >> build-info.txt
+        echo "Ref: ${{ github.ref }}" >> build-info.txt
+        
+    - name: Upload executable artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ github.event.repository.name }}-${{ github.sha }}
+        path: |
+          server
+          *.so
+          *.dylib
+          *.dll
+          build-info.txt
+        if-no-files-found: error
