@@ -1,4 +1,4 @@
-name: C/C++ CI
+name: C/C++ CI on CentOS 7
 
 on:
   push:
@@ -8,11 +8,22 @@ on:
 
 jobs:
   build:
-    runs-on: CentOS 7-latest
+    # 使用 CentOS 7 环境
+    runs-on: ubuntu-latest  # GitHub 没有直接的 CentOS 7 运行器，我们需要使用容器
+    
+    container:
+      image: centos:7
+      options: --cpus 1
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
     
+    - name: Install development tools
+      run: |
+        yum -y update
+        yum -y install make gcc-c++ which
+        
     - name: Build project
       run: make
       
@@ -24,7 +35,6 @@ jobs:
         if [ -f "server" ]; then
           echo "✅ Server executable found"
           ls -la server
-          # 确保有执行权限
           chmod +x server
         else
           echo "❌ Server executable not found"
@@ -37,9 +47,14 @@ jobs:
         
     - name: Test the server executable
       run: |
-        # 尝试运行服务器（可能需要在后台运行并测试响应）
+        # 尝试运行服务器
         timeout 5s ./server --version || ./server -v || echo "Version check not available"
         echo "Server test completed"
+        
+    - name: Check library dependencies
+      run: |
+        echo "Checking library dependencies:"
+        ldd server || echo "ldd command may not be available"
         
     - name: Create package directory
       run: |
@@ -60,13 +75,13 @@ jobs:
     - name: Upload server executable
       uses: actions/upload-artifact@v4
       with:
-        name: server-executable
+        name: server-executable-centos7
         path: server
         if-no-files-found: error
         
     - name: Upload complete package
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ github.event.repository.name }}-package
+        name: ${{ github.event.repository.name }}-centos7-package
         path: ${{ github.event.repository.name }}-${{ github.sha }}.tar.gz
         if-no-files-found: error
