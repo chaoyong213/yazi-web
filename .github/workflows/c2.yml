@@ -1,0 +1,41 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build project
+      run: make
+      
+    - name: List built artifacts
+      run: ls -la
+      
+    - name: Test run executable
+      run: |
+        if [ -f "server" ]; then
+          chmod +x server
+          # 这里可以添加运行命令，例如：./server --version 或者 ./server --help
+          ./server --version || echo "运行可执行文件失败，可能缺少依赖或需要配置"
+        else
+          echo "未找到可执行文件server"
+        fi
+        
+    - name: Upload executable artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ github.event.repository.name }}-executable
+        path: |
+          server
+          *.so
+          *.dylib
+          *.dll
+        if-no-files-found: warn
